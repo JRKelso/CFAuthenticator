@@ -49,11 +49,18 @@ epoch = CreateDateTime(1970,1,1,0,0,0);
 testDate = createDateTime(2005,03,18,1,58,29);
 epochTime = dateDiff("s", epoch, testDate);
 timeStep = Int(epochTime/30);
-writeDump(timeStep);
 timeStep = FormatBaseN(timeStep, 16);
-writeDump(timeStep);
-sharedSecret = binaryEncode(toBinary(toBase64("12345678901234567890")), "hex");
+//sharedSecret = binaryEncode(toBinary(toBase64("12345678901234567890")), "hex"); //Correct
+sharedSecret = toBinary(toBase64("12345678901234567890"));
 writeDump(sharedSecret);
-hotpMessage= hmac(sharedSecret, 0, "hmacSha1");
+counter = binaryEncode(toBinary(toBase64(0)), "hex");
+hotpMessage = hmac(sharedSecret, counter, "hmacSha1");
 writeDump(hotpMessage);
+keySpec = createObject("java", "javax.crypto.spec.SecretKeySpec").init("HmacSHA1");
+mac = createObject("java", "javax.crypto.Mac").getInstance(keySpec.getAlgorithm());
+mac.init(keySpec);
+buffer = createObject("java", "java.nio.ByteBuffer").allocate(8);
+buffer.putLong(javaCast("long",2));
+hotpMessage = mac.doFinal(buffer.array());
+writeDump(binaryEncode(hotpMessage, "hex"));
 </cfscript>
