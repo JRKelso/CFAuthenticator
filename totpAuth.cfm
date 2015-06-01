@@ -47,15 +47,21 @@ writeDump(timeStep);
 <cfscript>
 epoch = CreateDateTime(1970,1,1,0,0,0);
 testDate = createDateTime(2005,03,18,1,58,29);
-epochTime = dateDiff("s", epoch, testDate);
+epochTime = dateDiff("s", epoch, now());
 timeStep = Int(epochTime/30);
-timeStep = FormatBaseN(timeStep, 16);
 //sharedSecret = binaryEncode(toBinary(toBase64("12345678901234567890")), "hex"); //Correct
-sharedSecret = toBinary(toBase64("12345678901234567890"));
+//sharedSecret = toBinary(toBase64("12345678901234567890"));
+//sharedSecret = new Base32().encode("12345678901234567890");
+byteBuffer = CreateObject("java", "java.nio.ByteBuffer");
+charKey = javaCast("char[]", ["1","2","3","4","5","6","7","8","9","0","1","2","3","4","5","6","7","8","9","0"]);
+	
+for (i = 1; i < ArrayLen(charKey); i++){
+	
+}
+writeDump(test);
+timeStep = FormatBaseN(timeStep, 16);
+timeStep = new Base32().encode(timeStep);
 writeDump(sharedSecret);
-counter = binaryEncode(toBinary(toBase64(0)), "hex");
-hotpMessage = hmac(sharedSecret, counter, "hmacSha1");
-writeDump(hotpMessage);
 keySpec = createObject("java", "javax.crypto.spec.SecretKeySpec").init("HmacSHA1");
 mac = createObject("java", "javax.crypto.Mac").getInstance(keySpec.getAlgorithm());
 mac.init(keySpec);
