@@ -46,70 +46,55 @@ writeDump(timeStep);
 </cfscript>--->
 <cfscript>
 epoch = CreateDateTime(1970,1,1,0,0,0);
-testDate = createDateTime(2005,03,18,1,58,29);
-epochTime = dateDiff("s", epoch, testDate);
+testDate = createDateTime(2005,03,18,1,58,31);
+epochTime = dateDiff("s", epoch, now());
 timeStep = Int(epochTime/30);
-timeStep = formatBaseN(timeStep, 16);
 while (Len(timeStep) < 16){
 	timeStep = "0" & timeStep;
 }
-writeDump(timeStep);
-//writeOutput("timeStep from 2005-3-18 1:58:29, 30 second timestep:" & timeStep & "<br>");
-//writeDump(formatBaseN(timeStep, 16));
-timeByteArray = createObject("java", "java.math.BigInteger").init("10" & timeStep, 16).toByteArray();
-/*timeByteArray = createObject("java", "java.nio.ByteBuffer").allocate(8);
-timeByteArray.putLong(javaCast("long", timeStep));
-timeByteArray = timeByteArray.array();*/
-writeDump(timeByteArray);
-//writeDump(timeByteArray);
-//sharedSecret = binaryEncode(toBinary(toBase64("12345678901234567890")), "hex"); //Correct
-//sharedSecret = toBinary(toBase64("12345678901234567890"));
-//sharedSecret = new Base32().encode("12345678901234567890");
-//binaryKey = charsetDecode("12345678901234567890", "utf-8");
+longObj = createObject("java", "java.lang.Long");
+steps = longObj.toHexString(javaCast("long", timeStep)).ToUpperCase();
 sharedKey = "12345678901234567890";
 sharedKey = charsetDecode(sharedKey, "utf-8");
 sharedKey = binaryEncode(sharedKey, "hex");
-keyBytes = javaCast("string", sharedKey).getBytes();
-writeOutput("KeyBytes");
-writeDump(keyBytes);
-writeOutput("<br>");
-/*bigEndianKey = ArrayNew(1);
-counter = 1;
-for (i = arrayLen(keyBytes); i > 0; i--){
-	bigEndianKey[counter] = keyBytes[i];
-	counter++;
+keyBytes = createObjecT("java", "java.math.BigInteger").init("10" & sharedKey, 16).ToByteArray();
+for (i = 1; i < arrayLen(keyBytes); i++){
+	keyBA[i] = keyBytes[i+1];
 }
-*/
-counter = 1;
-bigEndianTime = ArrayNew(1);
-for (i = arrayLen(timeByteArray); i > 0; i--){
-	bigEndianTime[counter] = timeByteArray[i];
-	counter++;
+while (len(steps) < 16){
+	steps = "0" & steps;
 }
-bigEndianTimeStep = javaCast("byte[]", bigEndianTime);
-writeDump(bigEndianTimeStep);
-
-
-
-keySpec = createObject("java", "javax.crypto.spec.SecretKeySpec").init(keyBytes, "HmacSHA1");
+timeByteArray = createObject("java", "java.math.BigInteger").init("10" & steps, 16).toByteArray();
+for (i = 1; i < ArrayLen(timeByteArray); i++){
+	timeBA[i] = timeByteArray[i+1];
+}
+keySpec = createObject("java", "javax.crypto.spec.SecretKeySpec").init(keyBA, "HmacSHA1");
 mac = createObject("java", "javax.crypto.Mac").getInstance(keySpec.getAlgorithm());
 mac.init(keySpec);
-//buffer = createObject("java", "java.nio.ByteBuffer").allocate(8);
-//buffer.putInt(javaCast("int",bigEndianTimeStep));
-hotpMessage = mac.doFinal(bigEndianTimeStep);
-writeDump(hotpMessage);
-hexArray = ArrayNew(1);
-counter = 1;
-for (i = 1; i < arraylen(hotpMessage); i++){
-	hexArray[counter] = hotpMessage[i];
-	counter++;
+hotpMessage = mac.doFinal(timeBA);
+if (hotpMessage[arrayLen(hotpMessage)] < 0){
+	offsetStart = bitAnd(hotpMessage[arrayLen(hotpMessage)], 255);
 }
-writeDump(hexArray);
-
-offsetStart = inputBaseN(mid(hexArray[arrayLen(hexArray)], 2, 1), 16);
-offsetHex = "";
-for (i = 0; i < 4; i++){
-	offsetHex = offsetHex & hexArray[offsetStart + i];
+else {
+	offsetStart = hotpMessage[arrayLen(hotpMessage)];
 }
-writeDump(BitAnd(inputBaseN(offsetHex, 16), inputBaseN("7fffffff", 16)));
+for (i = 1; i <= arrayLen(hotpMessage); i++){
+	writeDump(i & ":" & hotpMessage[i]);
+	writeOutput("<br>");
+}
+offset = inputBaseN(mid(formatBaseN(offsetStart, 16), 2, 1), 16) + 1;
+otpTest = hotpMessage[offset] & hotpMessage[offset + 1] & hotpMessage[offset + 2] & hotpMessage[offset + 3];
+firstTest = bitSHLN(bitAnd(hotpMessage[offset], inputBaseN("7f", 16)), 24);
+secondTest = bitSHLN(bitAnd(hotpMessage[offset + 1], 255), 16);
+thirdTest = bitSHLN(bitAnd(hotpMessage[offset + 2], 255), 8);
+fourthTest = bitAnd(hotpMessage[offset + 3], 255);
+writeDump("firstTest:" & firstTest);
+writeDump("secondTest:" & secondTest);
+writeDump("thirdTest:" & thirdTest);
+writeDump("fourthTest:" & fourthTest);
+writeDump(bitOr(bitOr(firstTest, secondTest), bitOr(thirdTest, fourthTest)));
+writedump(otpTest);
+binary = bitAnd(hotpMessage[offset], inputBaseN("7f",16)) & bitAnd(hotpMessage[offset + 1], inputBaseN("ff", 16)) & bitAnd(hotpMessage[offset + 2], inputBaseN("ff", 16)) & bitAnd(hotpMessage[offset + 3], inputBaseN("ff", 16));
+writeDump(binary);
+//writeDump(BitAnd(inputBaseN(offsetHex, 16), inputBaseN("7fffffff", 16)));
 </cfscript>
