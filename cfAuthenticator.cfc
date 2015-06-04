@@ -47,6 +47,11 @@ component output=false {
 		thirdOffset = bitSHLN(bitAnd(hotpMessage[offset + 2], 255), 8);
 		fourthOffset = bitAnd(hotpMessage[offset + 3], 255);
 		binary = bitOr(bitOr(firstOffset, secondOffset), bitOr(thirdOffset, fourthOffset));
-		return Mid(binary, len(binary)-5, 6);
+		if (Mid(binary, len(binary)-5, 6) eq arguments.code){
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 }
