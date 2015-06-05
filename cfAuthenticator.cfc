@@ -54,4 +54,11 @@ component output=false {
 			return false;
 		}
 	}
+		
+	public function generateQRCode(required string sharedKey, required string loginName, required string issuer){
+		base32Secret = new Base32().encode(arguments.sharedKey);
+		gAuthURI = URLEncodedFormat("otpauth://totp/" & arguments.loginName & "?secret=" & base32Secret & "&issuer=" & arguments.issuer);
+		qrImageString = "<img src='https://chart.googleapis.com/chart?cht=qr&chs=160x160&chl=" & gAuthURI & "'>";
+		return qrImageString;
+	}
 }
